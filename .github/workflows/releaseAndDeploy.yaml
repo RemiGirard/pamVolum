@@ -87,7 +87,7 @@ jobs:
       - name: list docker images
         run: docker image ls
 
-      - run: docker tag remigirarddev-next-app remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${{ github.ref_name }}
+      - run: docker tag pam-volume-app remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${{ github.ref_name }}
       - run: docker push remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${{ github.ref_name }}
 
       # Deploy to remote swarm cluster
