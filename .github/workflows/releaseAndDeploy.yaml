@@ -22,15 +22,15 @@ jobs:
           node-version: 20.17.0
 
       # Build and run services
-#      - name: create external dependencies
-#        run: docker network create traefik-public
+      #      - name: create external dependencies
+      #        run: docker network create traefik-public
 
       - name: Build using docker compose
         run: docker compose -f docker-compose.yaml up -d
 
       # Run unit tests
-#      - name: Run unit tests
-#        run: docker compose exec app pnpm test
+      #      - name: Run unit tests
+      #        run: docker compose exec app pnpm test
 
       # @TODO: Run static code analysis
 
@@ -57,12 +57,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get current version
+        if: github.ref_name == 'main'
         id: get_version
         run: |
           VERSION=$(git describe --tags --abbrev=0)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Set VERSION to branch name if not main
+        if: github.ref_name != 'main'
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Display release version number
+        if: github.ref_name == 'main'
         run: echo "The current version is ${{ steps.get_version.outputs.VERSION }}"
 
       # Push Docker image to registry
@@ -76,12 +84,15 @@ jobs:
       - name: Verify Docker registry certificates
         run: docker pull remigirard.dev:5000/nonexistent-image || echo "Certificates are valid"
 
-      - run: docker tag remigirarddev_next-app remigirard.dev:5000/admin/remigirarddev_next-app:${{ github.ref_name }}
-      - run: docker push remigirard.dev:5000/admin/remigirarddev_next-app:${{ github.ref_name }}
+      - name: list docker images
+        run: docker image ls
+
+      - run: docker tag remigirarddev-next-app remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${{ github.ref_name }}
+      - run: docker push remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${{ github.ref_name }}
 
       # Deploy to remote swarm cluster
 
-#      - run: export DOCKER_HOST=ssh://debian@remigirard.dev
+      #      - run: export DOCKER_HOST=ssh://debian@remigirard.dev
       - name: create .ssh if does not exist
         run: mkdir -p ~/.ssh
       - run: echo "${{secrets.REGISTRY_CERTIFICATE}}" > ~/.ssh/id_rsa
@@ -93,19 +104,21 @@ jobs:
       - run: docker container ls
         env:
           DOCKER_HOST: ssh://debian@remigirard.dev
-      - run: docker pull remigirard.dev:5000/admin/remigirarddev_next-app:${{ github.ref_name }}
+      - run: docker pull remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${{ github.ref_name }}
         env:
           DOCKER_HOST: ssh://debian@remigirard.dev
       - name: Set DEPLOY_URL
         id: set_deploy_url
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "DEPLOY_URL=pet-camremigirard.dev" >> $GITHUB_ENV
+            echo "DEPLOY_URL=volum.pam.remigirard.dev" >> $GITHUB_ENV
           else
-            echo "DEPLOY_URL=${{ github.ref_name }}.staging.pet-cam.remigirard.dev" >> $GITHUB_ENV
+            echo "DEPLOY_URL=${{ github.ref_name }}.staging.volum.pam.remigirard.dev" >> $GITHUB_ENV
           fi
-      - run: docker stack deploy -c docker-compose.prod.yaml --with-registry-auth remigirarddev-${{ github.ref_name }}
+      - run: docker stack deploy -c docker-compose.prod.yaml --with-registry-auth remigirarddev-volum-pam-${{ github.ref_name }}
         env:
           DEPLOY_URL: ${{ env.DEPLOY_URL }}
+          TRAEFIK_ROUTER_NAME: remigirarddev-volum-pam-${{ github.ref_name }}
           STAGE_NAME: ${{ github.ref_name }}
           DOCKER_HOST: ssh://debian@remigirard.dev
+
