@@ -1,0 +1,8 @@
+services:
+  app:
+    volumes:
+      - ./next-app/:/app/
+    user: "${UID}:${GID}"
+    environment:
+      NODE_ENV: development
+    command: sh -c "pnpm install --config.confirmModulesPurge=false && pnpm run dev"

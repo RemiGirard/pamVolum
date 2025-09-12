@@ -1,0 +1,6 @@
+{
+	"scripts": {
+		"up": "UID=$(id -u) GID=$(id -g) docker compose up",
+		"upForBuild": "docker compose -f docker-compose.yaml up -d"
+	}
+}

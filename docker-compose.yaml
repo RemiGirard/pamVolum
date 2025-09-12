@@ -1,0 +1,8 @@
+name: remigirarddev
+services:
+  app:
+    build:
+      context: ./next-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"

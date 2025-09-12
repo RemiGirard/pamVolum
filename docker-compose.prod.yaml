@@ -1,0 +1,15 @@
+services:
+  app:
+    image: remigirard.dev:5000/admin/remigirarddev_next-app:${STAGE_NAME}
+    networks:
+      - traefik-public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.${STAGE_NAME}.rule=Host(`${DEPLOY_URL}`)"
+        - "traefik.http.routers.${STAGE_NAME}.entrypoints=websecure"
+        - "traefik.http.routers.${STAGE_NAME}.tls.certresolver=wildcardresolver"
+        - "traefik.http.services.${STAGE_NAME}.loadbalancer.server.port=3000"
+networks:
+  traefik-public:
+    external: true
