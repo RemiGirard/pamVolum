@@ -1,6 +1,6 @@
 services:
   app:
-    image: volum-pam-remigirard.dev:5000/admin/volum-pam-remigirarddev_next-app:${STAGE_NAME}
+    image: remigirard.dev:5000/admin/remigirarddev_volume_pam_next-app:${STAGE_NAME}
     networks:
       - traefik-public
     deploy:
