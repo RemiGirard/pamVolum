@@ -49,7 +49,7 @@ export default function Calculator() {
                 Calculateur de durée de remplissage
               </h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Calculez le temps nécessaire pour remplir un volume en fonction du débit.
+                Calculez le temps nécessaire pour vider un volume en fonction du débit.
               </p>
             </header>
 
