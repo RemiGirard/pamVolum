@@ -25,18 +25,26 @@ function formatDuration(totalSeconds: number): string {
 }
 
 export default function Calculator() {
-  const [volumeValue, setVolumeValue] = useState<number>(0); // litres
-  const [volumeSpeed, setVolumeSpeed] = useState<{
-    volume: number; // millilitres
-    perTimeInSeconds: number; // seconds
-  }>({
-    volume: 0,
-    perTimeInSeconds: 1,
-  });
+  // Keep raw strings so inputs can be temporarily empty while editing
+  const [volumeValueStr, setVolumeValueStr] = useState<string>("10");
+  const [speedVolumeStr, setSpeedVolumeStr] = useState<string>("1");
+  const [perTimeStr, setPerTimeStr] = useState<string>("100");
 
-  const isValid = volumeValue >= 0 && volumeSpeed.volume > 0 && volumeSpeed.perTimeInSeconds > 0;
+  // Parsed values for calculations
+  const volumeValue = parseFloat(volumeValueStr);
+  const speedVolume = parseFloat(speedVolumeStr);
+  const perTimeInSeconds = parseFloat(perTimeStr);
+
+  const isValid =
+    Number.isFinite(volumeValue) &&
+    Number.isFinite(speedVolume) &&
+    Number.isFinite(perTimeInSeconds) &&
+    volumeValue >= 0 &&
+    speedVolume > 0 &&
+    perTimeInSeconds > 0;
+
   const timeInSeconds = isValid
-    ? (volumeValue * 1000 / volumeSpeed.volume) * volumeSpeed.perTimeInSeconds
+    ? (volumeValue * 1000 / speedVolume) * perTimeInSeconds
     : 0;
 
   return (
@@ -65,8 +73,10 @@ export default function Calculator() {
                     min={0}
                     step={0.01}
                     placeholder="0,00"
-                    value={volumeValue}
-                    onChange={(e) => setVolumeValue(Number(e.target.value))}
+                    value={volumeValueStr}
+                    onChange={(e) => setVolumeValueStr(e.target.value)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onClick={(e) => e.currentTarget.select()}
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500 dark:text-slate-400">
                     L
@@ -86,10 +96,10 @@ export default function Calculator() {
                     min={0}
                     step={1}
                     placeholder="0"
-                    value={volumeSpeed.volume}
-                    onChange={(e) =>
-                      setVolumeSpeed({ volume: Number(e.target.value), perTimeInSeconds: volumeSpeed.perTimeInSeconds })
-                    }
+                    value={speedVolumeStr}
+                    onChange={(e) => setSpeedVolumeStr(e.target.value)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onClick={(e) => e.currentTarget.select()}
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500 dark:text-slate-400">
                     ml
@@ -109,10 +119,10 @@ export default function Calculator() {
                     min={1}
                     step={1}
                     placeholder="1"
-                    value={volumeSpeed.perTimeInSeconds}
-                    onChange={(e) =>
-                      setVolumeSpeed({ volume: volumeSpeed.volume, perTimeInSeconds: Number(e.target.value) })
-                    }
+                    value={perTimeStr}
+                    onChange={(e) => setPerTimeStr(e.target.value)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onClick={(e) => e.currentTarget.select()}
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500 dark:text-slate-400">
                     s
