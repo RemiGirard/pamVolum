@@ -2,8 +2,10 @@
 
 import React from "react";
 
-function formatDuration(totalSeconds: number): string {
-  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "0 sec";
+function splitDurationTwoLines(totalSeconds: number): { daysLine: string; hmsLine: string } {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+    return { daysLine: "0 jour", hmsLine: "00 h 00 m 00 s" };
+  }
   let seconds = Math.floor(totalSeconds);
   const jours = Math.floor(seconds / 86400);
   seconds %= 86400;
@@ -12,15 +14,21 @@ function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const sec = seconds % 60;
 
-  const parts: string[] = [];
-  if (jours > 0) parts.push(`${jours} jour${jours > 1 ? "s" : ""}`);
-  if (heures > 0) parts.push(`${heures} h`);
-  if (minutes > 0)
-    parts.push(`${jours > 0 || heures > 0 ? minutes.toString().padStart(2, "0") : minutes} min`);
-  if (sec > 0 || parts.length === 0)
-    parts.push(`${jours > 0 || heures > 0 || minutes > 0 ? sec.toString().padStart(2, "0") : sec} sec`);
+  const daysLabel = `${jours} jour${jours > 1 ? "s" : ""}`;
+  const h = String(heures).padStart(2, "0");
+  const m = String(minutes).padStart(2, "0");
+  const s = String(sec).padStart(2, "0");
+  return { daysLine: daysLabel, hmsLine: `${h} h ${m} m ${s} s` };
+}
 
-  return parts.join(" ");
+function formatDate(date: Date): string {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
 }
 
 export type Experiment = {
@@ -28,9 +36,9 @@ export type Experiment = {
   startLiters: number;
   mlPerSec: number;
   remainingMl: number;
-  elapsedMs: number;
   isRunning: boolean;
-  lastTick: number | null;
+  startedAt: number | null;
+  endsAt: number | null;
 };
 
 type Props = {
@@ -42,15 +50,15 @@ type Props = {
 
 export default function ExperimentList({ experiments, onTogglePause, onReset, onRemove }: Props) {
   return (
-    <div className="rounded-xl bg-slate-50 px-4 py-4 ring-1 ring-inset ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-700 w-full">
+    <div className="rounded-xl bg-slate-50 px-4 py-4 ring-1 ring-inset ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-700 w-full h-full overflow-auto">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Expériences</h3>
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Vidages</h3>
         <span className="text-xs text-slate-500 dark:text-slate-400">{experiments.length}</span>
       </div>
       {experiments.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Aucune expérience pour le moment.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Aucun vidage pour le moment.</p>
       ) : (
-        <ul className="space-y-3 max-h-80 overflow-auto pr-1">
+        <ul className="space-y-3 overflow-auto pr-1">
           {experiments.map((exp) => {
             const remainingL = (exp.remainingMl / 1000).toFixed(2);
             return (
@@ -84,13 +92,22 @@ export default function ExperimentList({ experiments, onTogglePause, onReset, on
                 <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600 dark:text-slate-300">Temps restant</span>
-                    <span className="font-mono text-slate-900 dark:text-slate-100">
-                      {formatDuration(exp.remainingMl / exp.mlPerSec)}
+                    <span className="font-mono text-slate-900 dark:text-slate-100 text-right">
+                      {(() => { const d = splitDurationTwoLines(exp.remainingMl / exp.mlPerSec); return (<>
+                        <span className="block">{d.daysLine}</span>
+                        <span className="block">{d.hmsLine}</span>
+                      </>); })()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600 dark:text-slate-300">Restant</span>
                     <span className="font-mono text-slate-900 dark:text-slate-100">{remainingL} L</span>
+                  </div>
+                  <div className="flex items-center justify-between col-span-2 w-1/2">
+                    <span className="text-slate-600 dark:text-slate-300">Fin</span>
+                    <span className="font-mono text-slate-900 dark:text-slate-100">
+                      {exp.endsAt ? formatDate(new Date(exp.endsAt)) : "-"}
+                    </span>
                   </div>
                 </div>
               </li>

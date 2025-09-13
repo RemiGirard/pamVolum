@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-function formatDuration(totalSeconds: number): string {
-  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "0 sec";
+function splitDurationTwoLines(totalSeconds: number): { daysLine: string; hmsLine: string } {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+    return { daysLine: "0 jour", hmsLine: "00 h 00 m 00 s" };
+  }
   let seconds = Math.floor(totalSeconds);
   const jours = Math.floor(seconds / 86400); // 60*60*24
   seconds %= 86400;
@@ -12,16 +14,21 @@ function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const sec = seconds % 60;
 
-  const parts: string[] = [];
+  const daysLabel = `${jours} jour${jours > 1 ? "s" : ""}`;
+  const h = String(heures).padStart(2, "0");
+  const m = String(minutes).padStart(2, "0");
+  const s = String(sec).padStart(2, "0");
+  return { daysLine: daysLabel, hmsLine: `${h} h ${m} m ${s} s` };
+}
 
-  if (jours > 0) parts.push(`${jours} jour${jours > 1 ? "s" : ""}`);
-  if (heures > 0) parts.push(`${heures} h`);
-  if (minutes > 0)
-    parts.push(`${jours > 0 || heures > 0 ? minutes.toString().padStart(2, "0") : minutes} min`);
-  if (sec > 0 || parts.length === 0)
-    parts.push(`${jours > 0 || heures > 0 || minutes > 0 ? sec.toString().padStart(2, "0") : sec} sec`);
-
-  return parts.join(" ");
+function formatDate(date: Date): string {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
 }
 
 type CalculatorProps = {
@@ -54,12 +61,14 @@ export default function Calculator({ onStartExperiment }: CalculatorProps) {
   // Avoid SSR/client hydration mismatch: compute end date only after mount
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    // set once on mount; refreshed end date updates when inputs change due to rerender using this anchor
+    // set once on mount and keep updating every second to refresh the end date display without SSR mismatch
     setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
 
   const endDateStr = isValid && volumeValue > 0 && now !== null
-    ? new Date(now + timeInSeconds * 1000).toLocaleString()
+    ? formatDate(new Date(now + timeInSeconds * 1000))
     : null;
 
 
@@ -70,7 +79,7 @@ export default function Calculator({ onStartExperiment }: CalculatorProps) {
           <div className="px-6 py-6 sm:px-8 sm:py-8">
             <header className="mb-6 sm:mb-8">
               <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                Calculateur de durée de remplissage
+                Calculateur de durée de vidage
               </h2>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 Calculez le temps nécessaire pour vider un volume en fonction du débit.
@@ -121,12 +130,12 @@ export default function Calculator({ onStartExperiment }: CalculatorProps) {
                     ml
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Volume écoulé par intervalle.</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Volume écoulé par intervalle en millilitres (10<sup>-3</sup> litre).</p>
               </fieldset>
 
               <fieldset className="flex flex-col">
                 <label className="mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Par intervalle (secondes)
+                  Par intervalle
                 </label>
                 <div className="relative">
                   <input
@@ -144,12 +153,12 @@ export default function Calculator({ onStartExperiment }: CalculatorProps) {
                     s
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Durée de l&apos;intervalle correspondant.</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Durée de l&apos;intervalle correspondant en secondes.</p>
               </fieldset>
             </div>
 
-            <div className="mt-6 rounded-xl bg-slate-50 px-4 py-4 ring-1 ring-inset ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-700">
-              <div className="flex items-start justify-between gap-4">
+            <div className="mt-6 rounded-xl bg-slate-50 px-4 py-4 ring-1 ring-inset ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-700 flex-col">
+              <div className="flex items-start justify-between gap-4 flex-row">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Durée estimée</p>
                   {!isValid && (
@@ -159,14 +168,22 @@ export default function Calculator({ onStartExperiment }: CalculatorProps) {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
-                    {formatDuration(timeInSeconds)}
+                  <p className="font-mono text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 text-right">
+                    {(() => { const d = splitDurationTwoLines(timeInSeconds); return (<>
+                      <span className="block">{d.daysLine}</span>
+                      <span className="block">{d.hmsLine}</span>
+                    </>); })()}
                   </p>
-                  {endDateStr && (
-                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      Fin si démarrage maintenant: {endDateStr}
-                    </p>
-                  )}
+                </div>
+              </div>
+              <div className={"flew-row"}>
+                <div className={"text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"}>
+                  Fin:
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
+                    {endDateStr}
+                  </p>
                 </div>
               </div>
             </div>
@@ -183,7 +200,7 @@ export default function Calculator({ onStartExperiment }: CalculatorProps) {
                 }}
                 disabled={!isValid || volumeValue <= 0}
               >
-                Démarrer l&apos;expérience
+                Démarrer le vidage
               </button>
             </div>
           </div>
