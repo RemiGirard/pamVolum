@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function formatDuration(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "0 sec";
@@ -24,13 +24,17 @@ function formatDuration(totalSeconds: number): string {
   return parts.join(" ");
 }
 
-export default function Calculator() {
+type CalculatorProps = {
+  onStartExperiment: (startLiters: number, mlPerSec: number) => void;
+};
+
+export default function Calculator({ onStartExperiment }: CalculatorProps) {
   // Keep raw strings so inputs can be temporarily empty while editing
   const [volumeValueStr, setVolumeValueStr] = useState<string>("10");
   const [speedVolumeStr, setSpeedVolumeStr] = useState<string>("1");
   const [perTimeStr, setPerTimeStr] = useState<string>("100");
 
-  // Parsed values for calculations
+  // Parsed values for calculations (static estimation)
   const volumeValue = parseFloat(volumeValueStr);
   const speedVolume = parseFloat(speedVolumeStr);
   const perTimeInSeconds = parseFloat(perTimeStr);
@@ -46,6 +50,18 @@ export default function Calculator() {
   const timeInSeconds = isValid
     ? (volumeValue * 1000 / speedVolume) * perTimeInSeconds
     : 0;
+
+  // Avoid SSR/client hydration mismatch: compute end date only after mount
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // set once on mount; refreshed end date updates when inputs change due to rerender using this anchor
+    setNow(Date.now());
+  }, []);
+
+  const endDateStr = isValid && volumeValue > 0 && now !== null
+    ? new Date(now + timeInSeconds * 1000).toLocaleString()
+    : null;
+
 
   return (
     <section className="w-full py-10 sm:py-14 bg-gradient-to-br from-cyan-50 to-white dark:from-slate-900 dark:to-slate-950">
@@ -146,8 +162,29 @@ export default function Calculator() {
                   <p className="font-mono text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
                     {formatDuration(timeInSeconds)}
                   </p>
+                  {endDateStr && (
+                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                      Fin si démarrage maintenant: {endDateStr}
+                    </p>
+                  )}
                 </div>
               </div>
+            </div>
+
+            {/* Start experiment button (list is shown on the page via ExperimentList) */}
+            <div className="mt-6">
+              <button
+                className="rounded-lg bg-cyan-600 px-4 py-2 text-white shadow hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => {
+                  if (!isValid) return;
+                  const startLiters = Math.max(0, volumeValue);
+                  const mlPerSec = speedVolume / perTimeInSeconds;
+                  onStartExperiment(startLiters, mlPerSec);
+                }}
+                disabled={!isValid || volumeValue <= 0}
+              >
+                Démarrer l&apos;expérience
+              </button>
             </div>
           </div>
         </div>
