@@ -50,7 +50,7 @@ type Props = {
 
 export default function ExperimentList({ experiments, onTogglePause, onReset, onRemove }: Props) {
   return (
-    <div className="rounded-xl bg-slate-50 px-4 py-4 ring-1 ring-inset ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-700 w-full h-full overflow-auto">
+    <div className="rounded-xl bg-slate-50 px-4 py-4 ring-1 ring-inset ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-700 w-full h-full overflow-auto flex flex-col min-h-0">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Vidages</h3>
         <span className="text-xs text-slate-500 dark:text-slate-400">{experiments.length}</span>
@@ -58,7 +58,7 @@ export default function ExperimentList({ experiments, onTogglePause, onReset, on
       {experiments.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">Aucun vidage pour le moment.</p>
       ) : (
-        <ul className="space-y-3 overflow-auto pr-1">
+        <ul className="space-y-3 overflow-auto pr-1 flex-1">
           {experiments.map((exp) => {
             const remainingL = (exp.remainingMl / 1000).toFixed(2);
             return (

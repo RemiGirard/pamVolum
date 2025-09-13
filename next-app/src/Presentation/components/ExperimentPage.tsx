@@ -133,8 +133,8 @@ export default function ExperimentPage() {
   }
 
   return (
-    <div className="w-full h-full">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 w-full h-full">
+    <div className="w-full h-full min-h-0">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 w-full h-full min-h-0">
         <Calculator onStartExperiment={addExperiment} />
         <ExperimentList
           experiments={experiments}
