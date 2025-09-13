@@ -100,7 +100,7 @@ export default function ExperimentList({ experiments, onTogglePause, onReset, on
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600 dark:text-slate-300">Restant</span>
+                    <span className="text-slate-600 dark:text-slate-300">Volume restant</span>
                     <span className="font-mono text-slate-900 dark:text-slate-100">{remainingL} L</span>
                   </div>
                   <div className="flex items-center justify-between col-span-2 w-1/2">
